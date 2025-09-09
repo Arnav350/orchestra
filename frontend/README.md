@@ -15,7 +15,7 @@ React Native (Expo) mobile application that provides voice input functionality f
 ## Tech Stack
 
 - **Framework**: React Native with Expo (~53.0.22)
-- **Router**: Expo Router (~5.1.5) 
+- **Router**: Expo Router (~5.1.5)
 - **Audio**: Expo AV (~15.1.7) for recording
 - **File System**: Expo File System (~18.1.11) for file management
 - **UI**: React Native components with custom styling
@@ -60,20 +60,23 @@ frontend/
 ### Installation
 
 1. **Install dependencies**:
+
 ```bash
 cd frontend
 npm install
 ```
 
 2. **Start development server**:
+
 ```bash
 npm start
 ```
 
 3. **Run on specific platforms**:
+
 ```bash
 npm run ios        # iOS simulator
-npm run android    # Android emulator  
+npm run android    # Android emulator
 npm run web        # Web browser
 ```
 
@@ -84,6 +87,7 @@ npm run web        # Web browser
 **Location**: `components/AudioRecorder.tsx`
 
 **Features**:
+
 - Press-and-hold recording interface
 - Microphone permission handling
 - Visual recording states (idle, recording, uploading)
@@ -91,11 +95,9 @@ npm run web        # Web browser
 - Error handling with user alerts
 
 **Usage**:
+
 ```typescript
-<AudioRecorder 
-  onAudioRecorded={(uri) => uploadAndProcess(uri)}
-  isUploading={uploading}
-/>
+<AudioRecorder onAudioRecorded={(uri) => uploadAndProcess(uri)} isUploading={uploading} />
 ```
 
 ### API Service
@@ -103,17 +105,19 @@ npm run web        # Web browser
 **Location**: `services/api.ts`
 
 **Functions**:
+
 - `uploadAudioForSTT(audioUri: string)`: Uploads audio file to backend
 - Returns transcribed text or error information
 - Handles network errors and timeouts
 
 ## Backend Integration
 
-The app connects to the Express.js backend running on `http://localhost:3000`.
+The app connects to the Express.js backend running on `http://localhost:8000`.
 
 **Configuration**: Update `API_BASE_URL` in `services/api.ts` for different environments.
 
 **Endpoint**: `POST /stt`
+
 - Accepts multipart/form-data with audio file
 - Returns JSON: `{ "text": "transcribed speech" }`
 
@@ -122,6 +126,7 @@ The app connects to the Express.js backend running on `http://localhost:3000`.
 1. **Start backend server** (see backend README)
 2. **Start Expo dev server**: `npm start`
 3. **Open on device/simulator**:
+
    - Scan QR code with Expo Go (physical device)
    - Press 'i' for iOS simulator
    - Press 'a' for Android emulator
@@ -147,16 +152,19 @@ The app connects to the Express.js backend running on `http://localhost:3000`.
 ## Platform-Specific Notes
 
 ### iOS
+
 - Requires microphone permission
 - Supports background audio recording
 - Native audio quality optimization
 
 ### Android
+
 - Edge-to-edge UI support
 - Adaptive icon configuration
 - Hardware back button handling
 
 ### Web
+
 - Browser-based audio recording
 - File upload via fetch API
 - Responsive design
@@ -164,11 +172,13 @@ The app connects to the Express.js backend running on `http://localhost:3000`.
 ## Environment Configuration
 
 ### Development
-- Backend: `http://localhost:3000`
+
+- Backend: `http://localhost:8000`
 - Expo dev server: `http://localhost:8081`
 - Live reload enabled
 
 ### Production
+
 - Update `API_BASE_URL` to production backend URL
 - Build optimized bundles with `expo build`
 - Deploy to app stores or web hosting
@@ -178,7 +188,7 @@ The app connects to the Express.js backend running on `http://localhost:3000`.
 ```bash
 npm start          # Start Expo development server
 npm run android    # Run on Android emulator/device
-npm run ios        # Run on iOS simulator/device  
+npm run ios        # Run on iOS simulator/device
 npm run web        # Run in web browser
 npm test           # Run Jest tests
 ```
@@ -186,6 +196,7 @@ npm test           # Run Jest tests
 ## Dependencies
 
 ### Core Dependencies
+
 - `expo` - Expo SDK platform
 - `react` / `react-native` - React Native framework
 - `expo-router` - File-based routing
@@ -193,36 +204,55 @@ npm test           # Run Jest tests
 - `expo-file-system` - File system operations
 
 ### UI & Navigation
+
 - `@react-navigation/native` - Navigation library
 - `react-native-safe-area-context` - Safe area handling
 - `react-native-screens` - Native screen optimization
 
 ## Future Enhancements
 
-This is **Step 1** of the voice automation system. Upcoming features:
+This completes **ALL Steps** of the voice automation system! Features implemented:
 
-- **Intent display**: Show parsed intents from backend
-- **Workflow results**: Display automation results
-- **Voice responses**: Play TTS audio responses
+- ✅ **Voice Input**: Push-to-talk recording interface
+- ✅ **Speech-to-Text**: Audio transcription via backend
+- ✅ **Intent Display**: Show parsed intents with details
+- ✅ **Workflow Results**: Display automation results
+- ✅ **Voice Responses**: Play TTS audio responses with button
+- ✅ **Complete Flow**: Voice → Text → Intent → Execute → Voice Response
+
+## Complete Voice Automation Flow
+
+1. **Record**: Hold button to record voice command
+2. **Transcribe**: Audio sent to backend `/stt` endpoint  
+3. **Parse**: Text analyzed by `/intent` endpoint
+4. **Execute**: Intent processed by `/execute` endpoint
+5. **Respond**: Result text displayed + optional TTS playback
+
+## Future Enhancements
+
 - **History**: Save and replay previous commands
-- **Settings**: Configure backend URL, voice settings
+- **Settings**: Configure backend URL, voice settings  
 - **Offline mode**: Local speech recognition
+- **Multi-step commands**: Complex task sequences
 
 ## Troubleshooting
 
 ### Common Issues
 
 **Recording not working:**
+
 - Check microphone permissions in device settings
 - Ensure backend server is running
 - Verify network connectivity
 
 **Upload failures:**
+
 - Confirm backend URL is correct and accessible
 - Check backend logs for detailed error messages
 - Verify audio file format compatibility
 
 **Development server issues:**
+
 - Clear Expo cache: `expo start -c`
 - Restart development server
 - Check for port conflicts
