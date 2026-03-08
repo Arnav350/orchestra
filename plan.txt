@@ -1,0 +1,341 @@
+================================================================================
+ORCHESTRA AI CHAT - VOICE INPUT/OUTPUT (TTS & STT) IMPLEMENTATION PLAN
+================================================================================
+
+🎯 GOAL:
+Add speech-to-text (STT) and text-to-speech (TTS) capabilities to Orchestra,
+making it a truly voice-enabled AI chatbot as promised by its name.
+
+================================================================================
+PHASE 1: INSTALL DEPENDENCIES
+================================================================================
+
+Step 1.1: Install Audio Packages
+---------------------------------
+Command:
+  yarn add expo-av expo-speech expo-file-system
+
+Packages:
+  - expo-av: Audio recording and playback
+  - expo-speech: Text-to-speech functionality
+  - expo-file-system: File management for audio files
+
+================================================================================
+PHASE 2: TEXT-TO-SPEECH (TTS) - IMPLEMENT FIRST (SIMPLER)
+================================================================================
+
+Step 2.1: Create TTS Hook
+--------------------------
+File: hooks/useTextToSpeech.ts
+
+Purpose:
+  - Manage TTS playback state
+  - Speak AI messages aloud using expo-speech
+  - Control speech rate and pitch
+  - Track which message is currently being spoken
+
+Key Functions:
+  - speak(text: string, messageId: string): Start speaking
+  - stop(): Stop current speech
+  - State: isSpeaking, currentSpeakingId
+
+Step 2.2: Update ChatMessage Component
+---------------------------------------
+File: components/chat/chat-message.tsx
+
+Changes:
+  1. Add speaker icon button for AI messages (not user messages)
+  2. Show playing state when message is being spoken
+  3. Stop button when speaking, play button when not
+  4. Import and use useTextToSpeech hook
+
+UI/UX:
+  - Small speaker icon in bottom-right of AI message bubble
+  - Animated when speaking
+  - Tappable to start/stop speech
+
+================================================================================
+PHASE 3: SPEECH-TO-TEXT (STT) VIA WHISPER API
+================================================================================
+
+Step 3.1: Create Whisper Edge Function
+---------------------------------------
+File: supabase/functions/speech-to-text/index.ts
+
+Purpose:
+  - Receive audio file from client (base64 or multipart)
+  - Call OpenAI Whisper API for transcription
+  - Return transcribed text
+
+API Details:
+  - Endpoint: POST /functions/v1/speech-to-text
+  - Input: { audio: base64String, format: 'mp4' | 'webm' | 'm4a' }
+  - Output: { success: boolean, text?: string, error?: string }
+  - Whisper model: whisper-1
+  - Language: auto-detect
+
+Cost:
+  - $0.006 per minute of audio
+  - Average message: 3-5 seconds = ~$0.0005 per transcription
+
+Step 3.2: Create Voice Recording Hook
+--------------------------------------
+File: hooks/useVoiceRecording.ts
+
+Purpose:
+  - Manage recording state and permissions
+  - Record audio using expo-av
+  - Upload audio to Whisper Edge Function
+  - Return transcribed text
+
+Key Functions:
+  - requestPermissions(): Request microphone permission
+  - startRecording(): Begin audio capture
+  - stopRecording(): End capture and transcribe
+  - State: isRecording, duration, transcribedText, error
+
+Implementation:
+  - Use Audio.Recording from expo-av
+  - Record in .m4a format (iOS) or .webm (Android)
+  - Set audio mode for recording
+  - Convert recording to base64
+  - Call speech-to-text Edge Function
+  - Handle errors gracefully
+
+Step 3.3: Create Voice Recorder Component
+------------------------------------------
+File: components/chat/voice-recorder.tsx
+
+Purpose:
+  - Visual UI for recording audio
+  - Show recording animation/waveform
+  - Display recording duration
+  - Cancel or send recording
+
+UI Elements:
+  - Pulsing red recording indicator
+  - Duration timer (00:05)
+  - Cancel button (X)
+  - Send button (checkmark)
+  - Waveform or volume visualization (optional)
+
+Step 3.4: Update ChatInputBar Component
+----------------------------------------
+File: components/chat/chat-input-bar.tsx
+
+Changes:
+  1. Add microphone button next to send button
+  2. Show VoiceRecorder component when recording
+  3. Hide text input when recording
+  4. Auto-populate text input with transcribed text
+  5. Disable microphone button during AI response
+
+UI States:
+  - Normal: Text input + mic button + send button
+  - Recording: VoiceRecorder component (full width)
+  - Transcribing: Loading indicator
+
+================================================================================
+PHASE 4: INTEGRATE VOICE FEATURES
+================================================================================
+
+Step 4.1: Update Chat Screen
+-----------------------------
+File: app/(tabs)/chat.tsx
+
+Changes:
+  1. Add voice recording state management
+  2. Handle transcribed text from voice input
+  3. Disable voice input during AI loading
+  4. Pass TTS state to message components
+
+Flow:
+  1. User taps microphone
+  2. Recording starts (permission handled)
+  3. User taps stop/send
+  4. Transcription happens (loading state)
+  5. Text populates input
+  6. User reviews and sends (or edits first)
+
+================================================================================
+PHASE 5: CONFIGURATION & DEPLOYMENT
+================================================================================
+
+Step 5.1: Configure App Permissions
+------------------------------------
+File: app.json
+
+Add to expo config:
+  "plugins": [
+    [
+      "expo-av",
+      {
+        "microphonePermission": "Allow Orchestra to access your microphone for voice input."
+      }
+    ]
+  ]
+
+iOS: NSMicrophoneUsageDescription
+Android: RECORD_AUDIO permission
+
+Step 5.2: Deploy Whisper Edge Function
+---------------------------------------
+Commands:
+  npx supabase functions deploy speech-to-text
+
+Note: OpenAI API key already set as OPENAI_API_KEY secret
+
+Step 5.3: Test on Physical Device
+----------------------------------
+Why: Microphone doesn't work on iOS Simulator or some Android emulators
+
+Test Cases:
+  1. Request microphone permission (grant/deny)
+  2. Record short message (3 seconds)
+  3. Record long message (30 seconds)
+  4. Cancel recording mid-way
+  5. Background noise handling
+  6. Multiple recordings in sequence
+  7. TTS playback of short message
+  8. TTS playback of long message
+  9. Stop TTS mid-speech
+  10. Multiple TTS playbacks
+
+================================================================================
+PHASE 6: POLISH & OPTIMIZATION
+================================================================================
+
+Step 6.1: Add Voice Settings
+-----------------------------
+Optional: Add to support screen
+  - TTS voice speed (0.5x - 2x)
+  - TTS pitch
+  - Auto-play AI responses
+  - Preferred STT language
+
+Step 6.2: Error Handling
+-------------------------
+Handle these scenarios:
+  - Microphone permission denied
+  - Whisper API failure (429, 500)
+  - Audio recording failure
+  - Network timeout during transcription
+  - TTS failure on device
+  - Unsupported audio format
+
+User-friendly messages:
+  - "Microphone access required for voice input"
+  - "Transcription failed. Please try again."
+  - "Voice playback not available on this device"
+
+Step 6.3: Performance Optimization
+-----------------------------------
+  - Compress audio before upload (reduce file size)
+  - Cache common phrases for faster response
+  - Use streaming if OpenAI supports it
+  - Debounce recording start (prevent accidental taps)
+
+================================================================================
+TECHNICAL SPECIFICATIONS
+================================================================================
+
+Audio Recording Settings:
+  - Format: AAC (m4a) on iOS, WebM on Android
+  - Quality: Medium (balance size and quality)
+  - Sample rate: 16kHz (Whisper recommendation)
+  - Channels: Mono
+  - Bit rate: 64kbps
+
+TTS Settings:
+  - Rate: 1.0 (normal speed, adjustable)
+  - Pitch: 1.0 (normal pitch)
+  - Language: Auto-detect from device
+  - Volume: 1.0 (max)
+
+Whisper API:
+  - Model: whisper-1
+  - Language: Auto-detect (or specify 'en')
+  - Response format: json
+  - Temperature: 0 (deterministic)
+
+================================================================================
+COST ANALYSIS
+================================================================================
+
+Speech-to-Text (Whisper):
+  - Cost: $0.006 per minute
+  - Average message: 4 seconds = $0.0004
+  - 1,000 voice messages = $0.40
+  - 10,000 voice messages = $4.00
+
+Text-to-Speech (expo-speech):
+  - Cost: FREE (uses device's built-in TTS)
+  - No API calls needed
+  - No token usage
+
+Combined (with existing chat):
+  - Voice input: $0.0004/message
+  - AI response: $0.0001/message (GPT-4o-mini)
+  - Voice output: $0.00/message
+  - Total per voice interaction: ~$0.0005
+
+Expected monthly cost (1,000 users, 10 messages/user/month):
+  - 10,000 messages × $0.0005 = $5.00/month
+
+================================================================================
+FILES SUMMARY
+================================================================================
+
+Files to Create:
+  ✓ plan.txt (this file)
+  - hooks/useTextToSpeech.ts
+  - hooks/useVoiceRecording.ts
+  - components/chat/voice-recorder.tsx
+  - supabase/functions/speech-to-text/index.ts
+
+Files to Modify:
+  - package.json (add dependencies)
+  - app.json (add microphone permissions)
+  - components/chat/chat-message.tsx (add speaker button)
+  - components/chat/chat-input-bar.tsx (add microphone button)
+  - app/(tabs)/chat.tsx (integrate voice features)
+
+================================================================================
+IMPLEMENTATION ORDER
+================================================================================
+
+1. Phase 1: Install dependencies
+2. Phase 2: Implement TTS (easier, quick win)
+3. Test TTS thoroughly
+4. Phase 3: Implement STT (more complex)
+5. Test STT thoroughly
+6. Phase 4: Integrate both features
+7. Phase 5: Deploy and test on device
+8. Phase 6: Polish and optimize
+
+Estimated Time:
+  - Phase 1: 5 minutes
+  - Phase 2: 2-3 hours
+  - Phase 3: 4-6 hours
+  - Phase 4: 1-2 hours
+  - Phase 5: 1 hour
+  - Phase 6: 2-3 hours
+  - Total: 10-15 hours (1-2 days)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Run: yarn add expo-av expo-speech expo-file-system
+2. Create hooks/useTextToSpeech.ts
+3. Update components/chat/chat-message.tsx
+4. Test TTS functionality
+5. Create supabase/functions/speech-to-text/index.ts
+6. Create hooks/useVoiceRecording.ts
+7. Create components/chat/voice-recorder.tsx
+8. Update components/chat/chat-input-bar.tsx
+9. Update app/(tabs)/chat.tsx
+10. Test on physical device
+
+Good luck with your implementation!
+================================================================================
