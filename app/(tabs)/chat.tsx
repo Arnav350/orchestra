@@ -3,8 +3,6 @@ import { ChatHeader } from '@/components/ui/chat-header';
 import { ChatMessage } from '@/components/chat/chat-message';
 import { ChatInputBar } from '@/components/chat/chat-input-bar';
 import { useChatMessages } from '@/hooks/useChatMessages';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
-import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   KeyboardAvoidingView,
@@ -19,71 +17,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatScreen() {
   const { messages, loading, error, aiLoading, sendMessage } = useChatMessages();
-  const { speak, stop, currentSpeakingId } = useTextToSpeech();
-  const {
-    isRecording,
-    duration,
-    transcribedText,
-    isTranscribing,
-    error: recordingError,
-    startRecording,
-    stopRecording,
-    cancelRecording,
-    clearTranscription,
-  } = useVoiceRecording();
-
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
-  const lastPlayedMessageIdRef = useRef<string | null>(null);
-  const previousMessageCountRef = useRef(0);
+  const latestAiMessageIdRef = useRef<string | null>(null);
+
+  // Track the latest AI message for typing animation
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && !lastMsg.isUser) {
+      latestAiMessageIdRef.current = lastMsg.id;
+    }
+  }, [messages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
-  // Auto-play AI responses (only for newly added messages, not on initial load)
-  useEffect(() => {
-    // Only auto-play if messages were actually added (not initial load or cache restore)
-    const isNewMessage = messages.length > previousMessageCountRef.current;
-    previousMessageCountRef.current = messages.length;
-
-    if (isNewMessage && messages.length > 0) {
-      const latestMessage = messages[messages.length - 1];
-      // Auto-play if:
-      // 1. It's an AI message (not user message)
-      // 2. We haven't already played this message
-      // 3. Nothing is currently speaking
-      if (
-        !latestMessage.isUser &&
-        latestMessage.id !== lastPlayedMessageIdRef.current &&
-        !currentSpeakingId
-      ) {
-        lastPlayedMessageIdRef.current = latestMessage.id;
-        speak(latestMessage.text, latestMessage.id);
-      }
-    }
-  }, [messages, speak, currentSpeakingId]);
-
-  // Auto-populate input with transcribed text
-  useEffect(() => {
-    if (transcribedText) {
-      setInputText(transcribedText);
-      clearTranscription();
-    }
-  }, [transcribedText, clearTranscription]);
-
-  // Show recording error if any
-  useEffect(() => {
-    if (recordingError) {
-      console.error('Recording error:', recordingError);
-    }
-  }, [recordingError]);
-
   const handleSend = async () => {
     if (inputText.trim()) {
       try {
-        setInputText(''); // Clear input immediately for better UX
+        setInputText('');
         await sendMessage(inputText.trim(), true);
       } catch (err) {
         console.error('Failed to send message:', err);
@@ -100,7 +54,6 @@ export default function ChatScreen() {
       >
         <ChatHeader title="Chat AI" />
 
-        {/* Messages Area */}
         {loading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={DesignTokens.colors.primary} />
@@ -126,13 +79,10 @@ export default function ChatScreen() {
                 id={message.id}
                 text={message.text}
                 isUser={message.isUser}
-                onSpeak={speak}
-                onStopSpeaking={stop}
-                isSpeaking={currentSpeakingId === message.id}
+                animate={!message.isUser && message.id === latestAiMessageIdRef.current}
               />
             ))}
 
-            {/* AI Typing Indicator */}
             {aiLoading && (
               <View style={styles.typingIndicator}>
                 <ActivityIndicator size="small" color={DesignTokens.colors.textSecondary} />
@@ -147,12 +97,6 @@ export default function ChatScreen() {
           onChangeText={setInputText}
           onSend={handleSend}
           disabled={aiLoading}
-          isRecording={isRecording}
-          isTranscribing={isTranscribing}
-          recordingDuration={duration}
-          onStartRecording={startRecording}
-          onStopRecording={stopRecording}
-          onCancelRecording={cancelRecording}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

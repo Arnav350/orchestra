@@ -1,24 +1,16 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { IconSymbol, IconSymbolName } from '@/components/ui/icon-symbol';
 import { DesignTokens } from '@/constants/theme';
-import { VoiceRecorder } from './voice-recorder';
 
 type ChatInputBarProps = {
   value: string;
   onChangeText: (text: string) => void;
   onSend: () => void;
   placeholder?: string;
-  searchIcon?: string;
-  sendIcon?: string;
+  searchIcon?: IconSymbolName;
+  sendIcon?: IconSymbolName;
   disabled?: boolean;
-  // Voice recording props
-  isRecording?: boolean;
-  isTranscribing?: boolean;
-  recordingDuration?: number;
-  onStartRecording?: () => void;
-  onStopRecording?: () => void;
-  onCancelRecording?: () => void;
 };
 
 export function ChatInputBar({
@@ -29,38 +21,7 @@ export function ChatInputBar({
   searchIcon = 'magnifyingglass',
   sendIcon = 'paperplane.fill',
   disabled = false,
-  isRecording = false,
-  isTranscribing = false,
-  recordingDuration = 0,
-  onStartRecording,
-  onStopRecording,
-  onCancelRecording,
 }: ChatInputBarProps) {
-  // Show voice recorder UI when recording
-  if (isRecording && onStopRecording && onCancelRecording) {
-    return (
-      <View style={styles.inputContainer}>
-        <VoiceRecorder
-          duration={recordingDuration}
-          onCancel={onCancelRecording}
-          onSend={onStopRecording}
-        />
-      </View>
-    );
-  }
-
-  // Show loading state when transcribing
-  if (isTranscribing) {
-    return (
-      <View style={styles.inputContainer}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={DesignTokens.colors.primary} />
-        </View>
-      </View>
-    );
-  }
-
-  // Normal input state
   return (
     <View style={styles.inputContainer}>
       <View style={styles.inputWrapper}>
@@ -81,19 +42,6 @@ export function ChatInputBar({
         />
       </View>
 
-      {/* Microphone button (only show if onStartRecording is provided) */}
-      {onStartRecording && (
-        <TouchableOpacity
-          style={[styles.micButton, disabled && styles.sendButtonDisabled]}
-          onPress={onStartRecording}
-          disabled={disabled}
-          activeOpacity={0.7}
-        >
-          <IconSymbol name="mic.fill" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      )}
-
-      {/* Send button */}
       <TouchableOpacity
         style={[styles.sendButton, disabled && styles.sendButtonDisabled]}
         onPress={onSend}
@@ -146,23 +94,5 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
-  },
-  micButton: {
-    width: 48,
-    height: 48,
-    borderRadius: DesignTokens.borderRadius.full,
-    backgroundColor: DesignTokens.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: DesignTokens.spacing.sm,
-  },
-  loadingContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: DesignTokens.colors.chatBubble,
-    borderRadius: DesignTokens.borderRadius.xl,
-    paddingVertical: DesignTokens.spacing.md,
   },
 });

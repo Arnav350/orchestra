@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { IconSymbol, IconSymbolName } from '@/components/ui/icon-symbol';
 import { DesignTokens } from '@/constants/theme';
 
 type ChatHeaderProps = {
   title: string;
   onLeftPress?: () => void;
   onRightPress?: () => void;
-  leftIcon?: string;
-  rightIcon?: string;
+  leftIcon?: IconSymbolName;
+  rightIcon?: IconSymbolName;
 };
 
 export function ChatHeader({

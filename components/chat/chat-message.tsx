@@ -1,32 +1,36 @@
 import { DesignTokens } from '@/constants/theme';
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+const TYPING_INTERVAL_MS = 16;
+const CHARS_PER_TICK = 2;
 
 type ChatMessageProps = {
   id: string;
   text: string;
   isUser: boolean;
-  onSpeak?: (text: string, messageId: string) => void;
-  onStopSpeaking?: () => void;
-  isSpeaking?: boolean;
+  animate?: boolean;
 };
 
-export function ChatMessage({
-  id,
-  text,
-  isUser,
-  onSpeak,
-  onStopSpeaking,
-  isSpeaking = false
-}: ChatMessageProps) {
-  const handleSpeakerPress = () => {
-    if (isSpeaking) {
-      onStopSpeaking?.();
-    } else {
-      onSpeak?.(text, id);
+export function ChatMessage({ id, text, isUser, animate = false }: ChatMessageProps) {
+  const [displayed, setDisplayed] = useState(animate ? '' : text);
+
+  useEffect(() => {
+    if (!animate) {
+      setDisplayed(text);
+      return;
     }
-  };
+
+    setDisplayed('');
+    let i = 0;
+    const interval = setInterval(() => {
+      i = Math.min(i + CHARS_PER_TICK, text.length);
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(interval);
+    }, TYPING_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [text, animate]);
 
   return (
     <View
@@ -37,22 +41,7 @@ export function ChatMessage({
       ]}
     >
       <View style={[styles.messageBubble, isUser && styles.messageBubbleUser]}>
-        <Text style={styles.messageText}>{text}</Text>
-
-        {/* Speaker button for AI messages only */}
-        {!isUser && (
-          <TouchableOpacity
-            style={styles.speakerButton}
-            onPress={handleSpeakerPress}
-            activeOpacity={0.7}
-          >
-            <IconSymbol
-              name={isSpeaking ? 'speaker.wave.3.fill' : 'speaker.wave.2'}
-              size={16}
-              color={isSpeaking ? DesignTokens.colors.primary : DesignTokens.colors.textSecondary}
-            />
-          </TouchableOpacity>
-        )}
+        <Text style={styles.messageText}>{displayed}</Text>
       </View>
     </View>
   );
@@ -83,12 +72,5 @@ const styles = StyleSheet.create({
     fontSize: DesignTokens.typography.body.fontSize,
     color: DesignTokens.colors.textPrimary,
     lineHeight: 22,
-  },
-  speakerButton: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    padding: 4,
-    borderRadius: DesignTokens.borderRadius.sm,
   },
 });

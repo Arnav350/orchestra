@@ -1,10 +1,10 @@
 import React from 'react';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { DesignTokens } from '@/constants/theme';
-import { IconSymbol } from './icon-symbol';
+import { IconSymbol, IconSymbolName } from './icon-symbol';
 
 export type ListRowProps = {
-  icon: string;
+  icon: IconSymbolName;
   iconColor: string;
   label: string;
   onPress?: () => void;
